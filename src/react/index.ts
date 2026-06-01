@@ -5,3 +5,4 @@
  * entry. The EditMode timeline dock (authoring) is a later slice.
  */
 export { MotionStage, type MotionStageProps } from "./MotionStage";
+export { TimelineDock, type TimelineDockProps } from "./TimelineDock";

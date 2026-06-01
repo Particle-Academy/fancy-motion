@@ -1,6 +1,6 @@
 {
   "name": "@particle-academy/fancy-motion",
-  "version": "0.0.1-dev.0",
+  "version": "0.0.1-dev.1",
   "description": "Scroll-driven timeline motion engine for Human+ UX — the page is a video, scroll is the playhead. Whole-page-snapshot keyframes (Magic-Move-for-scroll), per-keyframe snap/scroll, scenes, both axes. Owns TimelineDoc; consumed by fancy-cms.",
   "repository": {
     "type": "git",
