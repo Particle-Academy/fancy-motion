@@ -15,6 +15,14 @@ export interface NodeState {
   opacity?: number; // 0..1
   scale?: number;
   rotate?: number; // deg
+  /**
+   * Explicit size in px. Unlike the transform fields these are **optional with
+   * no default** — absent means "leave the element auto-sized". They tween only
+   * when present in the bracketing keyframes, so a pure move/scale never forces
+   * a width onto an element that didn't ask for one.
+   */
+  w?: number;
+  h?: number;
 }
 
 /** A whole-page snapshot: animatable state keyed by node id (e.g. the `data-cms` value). */

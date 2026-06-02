@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactElement } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactElement } from "react";
 import type { Keyframe, TimelineDoc } from "../timeline/types";
 
 export interface TimelineDockProps {
@@ -9,6 +9,8 @@ export interface TimelineDockProps {
   onScrub?: (progress: number) => void;
   selectedKeyframe?: string | null;
   onSelectKeyframe?: (id: string | null) => void;
+  /** Milliseconds the Play button takes to sweep the whole timeline (default frames × 1400ms). */
+  previewDurationMs?: number;
 }
 
 /**
@@ -24,11 +26,39 @@ export function TimelineDock({
   onScrub,
   selectedKeyframe = null,
   onSelectKeyframe,
+  previewDurationMs,
 }: TimelineDockProps): ReactElement {
   const trackRef = useRef<HTMLDivElement>(null);
   const frames = Math.max(1, value.frames);
   const sorted = [...value.keyframes].sort((a, b) => a.at - b.at);
   const selected = sorted.find((k) => k.id === selectedKeyframe) ?? null;
+
+  // Play = sweep the playhead 0→1 over time so you can preview the configured
+  // animation without scrolling. Driven by setInterval (fires in background tabs
+  // too, unlike rAF) off wall-clock elapsed, so playback speed is frame-independent.
+  const [playing, setPlaying] = useState(false);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stop = () => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+    setPlaying(false);
+  };
+  useEffect(() => () => stop(), []);
+  const play = () => {
+    if (!onScrub) return;
+    if (timer.current) clearInterval(timer.current);
+    const duration = Math.max(600, previewDurationMs ?? frames * 1400);
+    const from = progress >= 0.999 ? 0 : progress; // restart if parked at the end
+    const t0 = Date.now() - from * duration;
+    setPlaying(true);
+    onScrub(from);
+    timer.current = setInterval(() => {
+      const p = Math.min(1, (Date.now() - t0) / duration);
+      onScrub(p);
+      if (p >= 1) stop();
+    }, 1000 / 30); // 30fps — smooth enough, and easy on heavy full-page subtrees
+  };
+  const togglePlay = () => (playing ? stop() : play());
 
   const addKeyframe = () => {
     const id = `kf-${value.keyframes.length + 1}-${Math.floor(performance.now())}`;
@@ -68,6 +98,15 @@ export function TimelineDock({
   return (
     <div style={dock} data-fancy-motion-dock="">
       <div style={header}>
+        <button
+          type="button"
+          style={{ ...btn, background: playing ? "#8b5cf6" : "#334155", minWidth: 64 }}
+          onClick={togglePlay}
+          disabled={!onScrub}
+          title={playing ? "Pause preview" : "Play preview"}
+        >
+          {playing ? "❚❚ Pause" : "▶ Play"}
+        </button>
         <strong style={{ fontSize: 12 }}>Timeline</strong>
         <span style={{ opacity: 0.6, fontSize: 11 }}>
           {value.axis} · {frames} frame{frames === 1 ? "" : "s"}
