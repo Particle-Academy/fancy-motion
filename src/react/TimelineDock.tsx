@@ -79,6 +79,41 @@ export function TimelineDock({
     onChange({ ...value, keyframes: value.keyframes.filter((k) => k.id !== id) });
     if (selectedKeyframe === id) onSelectKeyframe?.(null);
   };
+  const patchScene = (id: string, patch: Partial<{ at: number; length: number }>) =>
+    onChange({ ...value, scenes: (value.scenes ?? []).map((s) => (s.id === id ? { ...s, ...patch } : s)) });
+  const removeScene = (id: string) =>
+    onChange({ ...value, scenes: (value.scenes ?? []).filter((s) => s.id !== id) });
+
+  // Scene resize — drag the left edge to move the start, the right edge to set
+  // the length. Min length 0.02 (so a scene never collapses to zero).
+  const sceneDrag = useRef<{ id: string; edge: "l" | "r" } | null>(null);
+  const posOnTrack = (clientX: number): number => {
+    const el = trackRef.current;
+    if (!el) return 0;
+    const r = el.getBoundingClientRect();
+    return clamp01((clientX - r.left) / r.width);
+  };
+  const onSceneHandleDown = (id: string, edge: "l" | "r") => (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    sceneDrag.current = { id, edge };
+  };
+  const onSceneHandleMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = sceneDrag.current;
+    if (!d) return;
+    const s = (value.scenes ?? []).find((x) => x.id === d.id);
+    if (!s) return;
+    const p = posOnTrack(e.clientX);
+    if (d.edge === "l") {
+      const at = Math.max(0, Math.min(p, s.at + s.length - 0.02));
+      patchScene(d.id, { at, length: s.at + s.length - at });
+    } else {
+      patchScene(d.id, { length: Math.max(0.02, Math.min(1 - s.at, p - s.at)) });
+    }
+  };
+  const onSceneHandleUp = () => {
+    sceneDrag.current = null;
+  };
 
   const scrubTo = (clientX: number) => {
     const el = trackRef.current;
@@ -114,7 +149,8 @@ export function TimelineDock({
         <span style={{ flex: 1 }} />
         <button type="button" style={btn} onClick={addKeyframe}>◆ Keyframe</button>
         <button type="button" style={btn} onClick={addScene}>▣ Scene</button>
-        <button type="button" style={btn} onClick={() => onChange({ ...value, frames: frames + 1 })}>＋ Frame</button>
+        <button type="button" style={btn} onClick={() => onChange({ ...value, frames: frames + 1 })} title="Expand page (add a viewport of scroll length)">＋ Frame</button>
+        <button type="button" style={{ ...btn, opacity: frames > 1 ? 1 : 0.4 }} disabled={frames <= 1} onClick={() => onChange({ ...value, frames: frames - 1 })} title="Shrink page">－ Frame</button>
       </div>
 
       <div
@@ -130,9 +166,31 @@ export function TimelineDock({
           </div>
         ))}
 
-        {/* scenes (pinned ranges) */}
+        {/* scenes (pinned ranges) — drag the edges to resize, ✕ to remove */}
         {(value.scenes ?? []).map((s) => (
-          <div key={s.id} style={{ ...sceneBand, left: `${s.at * 100}%`, width: `${s.length * 100}%` }} title="Scene (pinned)" />
+          <div key={s.id} style={{ ...sceneBand, left: `${s.at * 100}%`, width: `${s.length * 100}%` }} title="Scene (pinned) — drag edges to resize">
+            <div
+              onPointerDown={onSceneHandleDown(s.id, "l")}
+              onPointerMove={onSceneHandleMove}
+              onPointerUp={onSceneHandleUp}
+              style={{ ...sceneHandle, left: -3 }}
+            />
+            <button
+              type="button"
+              title="Remove scene"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={() => removeScene(s.id)}
+              style={sceneRemove}
+            >
+              ✕
+            </button>
+            <div
+              onPointerDown={onSceneHandleDown(s.id, "r")}
+              onPointerMove={onSceneHandleMove}
+              onPointerUp={onSceneHandleUp}
+              style={{ ...sceneHandle, right: -3 }}
+            />
+          </div>
         ))}
 
         {/* keyframes */}
@@ -221,6 +279,30 @@ const sceneBand: CSSProperties = {
   background: "rgba(245,158,11,0.14)",
   borderLeft: "1px solid rgba(245,158,11,0.5)",
   borderRight: "1px solid rgba(245,158,11,0.5)",
+};
+const sceneHandle: CSSProperties = {
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  width: 7,
+  cursor: "ew-resize",
+  background: "rgba(245,158,11,0.6)",
+  touchAction: "none",
+};
+const sceneRemove: CSSProperties = {
+  position: "absolute",
+  top: 3,
+  right: 9,
+  width: 16,
+  height: 16,
+  lineHeight: "12px",
+  fontSize: 10,
+  color: "#fff",
+  background: "rgba(245,158,11,0.7)",
+  border: "none",
+  borderRadius: 4,
+  cursor: "pointer",
+  padding: 0,
 };
 const diamond: CSSProperties = {
   position: "absolute",
