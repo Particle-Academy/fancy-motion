@@ -1,5 +1,7 @@
 # @particle-academy/fancy-motion
 
+[![Fancified](art/fancified.svg)](https://particle.academy)
+
 The scroll-driven **timeline** motion engine for the Fancy UI suite. **The page
 is a video; scroll is the playhead.**
 
