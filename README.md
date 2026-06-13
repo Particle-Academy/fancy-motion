@@ -34,3 +34,9 @@ const snapshot = sampleTimeline(timeline, 0.5);
 model, engine, dock, and player, and is reusable standalone.
 
 MIT © Particle Academy
+
+---
+
+## ⭐ Star Fancy UI
+
+If this package is useful to you, a quick ⭐ on the repo really helps us build a better kit. Thank you!
