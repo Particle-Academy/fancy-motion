@@ -135,7 +135,7 @@ export function TimelineDock({
       <div style={header}>
         <button
           type="button"
-          style={{ ...btn, background: playing ? "#8b5cf6" : "#334155", minWidth: 64 }}
+          style={{ ...btn, background: playing ? "var(--fmo-accent, #8b5cf6)" : "var(--fmo-control, #334155)", minWidth: 64 }}
           onClick={togglePlay}
           disabled={!onScrub}
           title={playing ? "Pause preview" : "Play preview"}
@@ -155,6 +155,24 @@ export function TimelineDock({
 
       <div
         ref={trackRef}
+        // A scrubbable track is a slider, and this one was a bare div: no role,
+        // no value, and nothing a keyboard could reach.
+        role="slider"
+        aria-label="Timeline playhead"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(clamp01(progress) * 100)}
+        aria-valuetext={`${Math.round(clamp01(progress) * 100)}% through the timeline`}
+        tabIndex={onScrub ? 0 : -1}
+        data-fmo-track=""
+        onKeyDown={(e) => {
+          if (!onScrub) return;
+          const step = e.shiftKey ? 0.1 : 0.02;
+          if (e.key === "ArrowRight") { e.preventDefault(); onScrub(clamp01(progress + step)); }
+          if (e.key === "ArrowLeft") { e.preventDefault(); onScrub(clamp01(progress - step)); }
+          if (e.key === "Home") { e.preventDefault(); onScrub(0); }
+          if (e.key === "End") { e.preventDefault(); onScrub(1); }
+        }}
         style={track}
         onPointerDown={onTrackPointer}
         onPointerMove={onTrackMove}
@@ -177,6 +195,9 @@ export function TimelineDock({
             />
             <button
               type="button"
+              // "✕" is a glyph, not a name.
+              aria-label={`Remove scene ${s.id}`}
+              data-fmo-scene-remove={s.id}
               title="Remove scene"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => removeScene(s.id)}
@@ -198,13 +219,20 @@ export function TimelineDock({
           <button
             key={k.id}
             type="button"
+            // The marker renders as a bare diamond with no text at all, so the
+            // name has to be explicit. `aria-pressed` is what tells a screen
+            // reader which keyframe is selected — the white outline below says
+            // it only to people who can see it.
+            aria-label={`${k.mode} keyframe at ${Math.round(k.at * 100)}%`}
+            aria-pressed={k.id === selectedKeyframe}
+            data-fmo-keyframe={k.id}
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSelectKeyframe?.(k.id)}
             title={`${k.mode} keyframe`}
             style={{
               ...diamond,
               left: `${k.at * 100}%`,
-              background: k.mode === "snap" ? "#f59e0b" : "#8b5cf6",
+              background: k.mode === "snap" ? "var(--fmo-scene, #f59e0b)" : "var(--fmo-accent, #8b5cf6)",
               outline: k.id === selectedKeyframe ? "2px solid #fff" : "none",
             }}
           />
@@ -219,7 +247,7 @@ export function TimelineDock({
           <span style={{ opacity: 0.7, fontSize: 11 }}>keyframe @ {(selected.at * 100).toFixed(0)}%</span>
           <button
             type="button"
-            style={{ ...btn, background: selected.mode === "snap" ? "#f59e0b" : "#334155" }}
+            style={{ ...btn, background: selected.mode === "snap" ? "var(--fmo-scene, #f59e0b)" : "var(--fmo-control, #334155)" }}
             onClick={() => patchKf(selected.id, { mode: selected.mode === "snap" ? "scroll" : "snap" })}
           >
             {selected.mode === "snap" ? "snap" : "scroll"}
@@ -236,10 +264,27 @@ function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));
 }
 
+/**
+ * Theme tokens for the dock.
+ *
+ * Every colour below resolved from a hardcoded slate hex, so a host could not
+ * retheme the timeline at all — it was a fixed dark bar whatever the app around
+ * it looked like. The suite's other editor surfaces solve this the same way
+ * (`--ff-*` in fancy-flow, `--fcms-*` in fancy-cms-ui); this is the `--fmo-*`
+ * layer, with the previous values as fallbacks so nothing moves by default.
+ *
+ * Override on any ancestor:
+ *
+ *   .my-app { --fmo-surface: #17171c; --fmo-accent: #ec4899; }
+ *
+ * The dock stays dark BY DEFAULT on purpose — it is editor chrome over a live
+ * page, the same call a video editor's timeline makes — but that is now a
+ * default rather than a hard-coding.
+ */
 const dock: CSSProperties = {
-  background: "#0b1220",
-  color: "#e2e8f0",
-  borderTop: "1px solid #1e293b",
+  background: "var(--fmo-surface, #0b1220)",
+  color: "var(--fmo-fg, #e2e8f0)",
+  borderTop: "1px solid var(--fmo-border, #1e293b)",
   padding: "10px 14px 14px",
   fontFamily: "system-ui, sans-serif",
   boxShadow: "0 -8px 24px -12px rgba(0,0,0,0.5)",
@@ -248,9 +293,9 @@ const header: CSSProperties = { display: "flex", alignItems: "center", gap: 10, 
 const btn: CSSProperties = {
   font: "inherit",
   fontSize: 11,
-  color: "#e2e8f0",
-  background: "#334155",
-  border: "1px solid #475569",
+  color: "var(--fmo-fg, #e2e8f0)",
+  background: "var(--fmo-control, #334155)",
+  border: "1px solid var(--fmo-control-border, #475569)",
   borderRadius: 6,
   padding: "4px 8px",
   cursor: "pointer",
@@ -258,8 +303,8 @@ const btn: CSSProperties = {
 const track: CSSProperties = {
   position: "relative",
   height: 56,
-  background: "#0f172a",
-  border: "1px solid #1e293b",
+  background: "var(--fmo-track, #0f172a)",
+  border: "1px solid var(--fmo-border, #1e293b)",
   borderRadius: 8,
   overflow: "hidden",
   cursor: "ew-resize",
@@ -268,7 +313,7 @@ const frameCell: CSSProperties = {
   position: "absolute",
   top: 0,
   bottom: 0,
-  borderRight: "1px solid #1e293b",
+  borderRight: "1px solid var(--fmo-border, #1e293b)",
   boxSizing: "border-box",
 };
 const frameLabel: CSSProperties = { position: "absolute", top: 4, left: 6, fontSize: 10, opacity: 0.4 };
@@ -321,7 +366,7 @@ const playhead: CSSProperties = {
   bottom: -2,
   width: 2,
   marginLeft: -1,
-  background: "#38bdf8",
+  background: "var(--fmo-playhead, #38bdf8)",
   pointerEvents: "none",
 };
 const kfRow: CSSProperties = { display: "flex", alignItems: "center", gap: 10, marginTop: 10 };
