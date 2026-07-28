@@ -1,7 +1,7 @@
 {
   "name": "@particle-academy/fancy-motion",
   "version": "0.0.1-dev.5",
-  "description": "Scroll-driven timeline motion engine for Human+ UX — the page is a video, scroll is the playhead. Whole-page-snapshot keyframes (Magic-Move-for-scroll), per-keyframe snap/scroll, scenes, both axes. Owns TimelineDoc; consumed by fancy-cms.",
+  "description": "Scroll-driven timeline motion engine for Human+ UX \u2014 the page is a video, scroll is the playhead. Whole-page-snapshot keyframes (Magic-Move-for-scroll), per-keyframe snap/scroll, scenes, both axes. Owns TimelineDoc; consumed by fancy-cms.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Particle-Academy/fancy-motion.git"
@@ -43,7 +43,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
@@ -70,11 +70,14 @@
     "@types/node": "^20.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.2.3",
+    "eslint": "^10.8.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^30.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.2.8",
     "tsup": "^8.5.0",
     "typescript": "^5.8.0",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.8"
   },
   "engines": {
