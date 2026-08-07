@@ -5,13 +5,44 @@ All notable changes to `@particle-academy/fancy-motion` are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-> **Pre-release.** This package is `0.0.1-dev.*` and its API is not settled.
-> Breaking changes land without ceremony until `0.1.0`.
+> **Pre-1.0.** Breaking changes land in MINOR releases — read the entry, not the
+> version number. The `0.0.1-dev.*` line is over as of `0.1.0`.
 
 > This file starts at `0.0.1-dev.5`. Earlier dev builds predate it; `git log` is
 > the record for those.
 
 ## [Unreleased]
+
+## [0.1.0] — 2026-08-07
+
+**First real release.** The `0.0.1-dev.*` preview line ends here.
+
+### Changed
+
+- **The package leaves preview.** Its own changelog said breaking changes would
+  land without ceremony *until `0.1.0`* — this is that version. Breaking changes
+  now land in minor releases and get a changelog entry saying what to do.
+
+- **BREAKING — Node 22 is now declared as the floor.** `engines.node` moves from
+  `>=18` to `>=22`.
+
+  **What you must do:** on Node 22 or newer, nothing. npm only *warns* on an
+  `engines` mismatch while **pnpm fails the install**, so this surfaces
+  differently depending on your package manager.
+
+- React 19 only (`peerDependencies.react` is `^19.0.0`), matching the rest of
+  the kit 0.5 floors.
+
+### Fixed
+
+- **`npm install @particle-academy/fancy-motion` was giving you the FIRST
+  preview build.** The `latest` dist-tag pointed at `0.0.1-dev.0` while the
+  newest code sat behind the `dev` tag, so a plain install silently resolved to
+  the oldest thing published — six builds behind, with no warning.
+
+  **What you must do:** upgrade. `0.1.0` becomes `latest`, so a plain install
+  now gets current code. If you pinned `0.0.1-dev.5` deliberately, this is the
+  same code with the floors applied.
 
 ## [0.0.1-dev.5] — 2026-07-27
 
