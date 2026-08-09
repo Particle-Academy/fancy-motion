@@ -1,7 +1,7 @@
 {
   "name": "@particle-academy/fancy-motion",
-  "version": "0.1.0",
-  "description": "Scroll-driven timeline motion engine for Human+ UX — the page is a video, scroll is the playhead. Whole-page-snapshot keyframes (Magic-Move-for-scroll), per-keyframe snap/scroll, scenes, both axes. Owns TimelineDoc; consumed by fancy-cms.",
+  "version": "0.2.0",
+  "description": "Scroll-driven timeline motion engine for Human+ UX \u2014 the page is a video, scroll is the playhead. Whole-page-snapshot keyframes (Magic-Move-for-scroll), per-keyframe snap/scroll, scenes, both axes. Owns TimelineDoc; consumed by fancy-cms.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Particle-Academy/fancy-motion.git"

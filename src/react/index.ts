@@ -6,3 +6,5 @@
  */
 export { MotionStage, type MotionStageProps } from "./MotionStage";
 export { TimelineDock, type TimelineDockProps } from "./TimelineDock";
+export { Reveal } from "./Reveal";
+export type { RevealProps } from "./Reveal";

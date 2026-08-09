@@ -13,6 +13,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-09
+
+### Added
+
+- **`Reveal`** on the `./react` subpath — reveal children once they scroll into
+  view. Story #170, task 231.
+
+  ```tsx
+  import { Reveal } from "@particle-academy/fancy-motion/react";
+  <Reveal>…</Reveal>
+  ```
+
+  The `kinetic` and `cursor` gallery styles each hand-rolled this with an
+  IntersectionObserver. It belongs here rather than in react-fancy because this
+  package's thesis is that the page is a video and scroll is the playhead — an
+  in-view trigger is that idea at its smallest.
+
+  Three behaviours are deliberate, each a way this is commonly written wrong:
+
+  - **Children always render**; revealing only flips `data-in-view`. Revealing by
+    *mounting* hides content from search engines and from anyone whose observer
+    never fires.
+  - **It fails open.** No `IntersectionObserver` — SSR, older browsers — means
+    revealed, not hidden. The alternative's failure mode is a blank page.
+  - **`prefers-reduced-motion` starts revealed and never observes.** Not "animates
+    faster": someone who asked the OS for less motion should not need a scroll
+    event to see content.
+
+  Styling is left to `[data-in-view]`, so a design can transition opacity,
+  transform, clip-path or nothing.
+
 ## [0.1.0] — 2026-08-07
 
 **First real release.** The `0.0.1-dev.*` preview line ends here.
