@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`MotionStage` can play somewhere other than the window.** It only ever
+  read window scroll over a `frames x 100vh` spacer, so a stage could not live
+  in a fixed-height box, a modal, a split pane or an editor canvas: the
+  showcase's own preview had to drop it for a hand-driven engine call. Three
+  additive props:
+  - `scrollContainer` (an element or a ref): play from that element's scroll.
+    The spacer and the sticky pin are sized from its client box instead of the
+    viewport, so one frame is one container-height.
+  - `progress` (0..1): the host owns the playhead. Scroll is ignored and no
+    spacer is rendered; the stage is a plain box (size it with `className`)
+    showing the timeline at that position. Pair it with `TimelineDock`'s
+    `progress` + `onScrub` and the dock's Play drives the stage.
+  - `onProgress(p)`: called with the playhead whenever a frame is applied.
+  Nothing to do: with none of them set, the stage behaves exactly as before.
+- **`Reveal` takes `root` and `onReveal`.** `root` (an element or a ref) is
+  the scroll container to observe against, so `rootMargin` measures from its
+  edges rather than the window's. A ref is resolved after commit, so a ref on
+  the parent box rendered in the same pass works. `onReveal()` fires once when
+  the block reveals, and on mount under `prefers-reduced-motion` or without
+  IntersectionObserver, where the block starts revealed. Neither prop reaches
+  the DOM. Nothing to do unless you want them.
+
 ### Changed
 
 - **Releases need a lab-run certificate.** `publish.yml` gains a read-only

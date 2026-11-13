@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, type ReactElement } from "react";
+import { act, createRef, useRef, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 
 import { Reveal } from "../src/react/Reveal";
@@ -8,14 +8,14 @@ import { Reveal } from "../src/react/Reveal";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /** Drive IntersectionObserver by hand — jsdom has none. */
-let observers: Array<{ cb: IntersectionObserverCallback; el?: Element; disconnected: boolean }> = [];
+let observers: Array<{ cb: IntersectionObserverCallback; el?: Element; disconnected: boolean; options?: IntersectionObserverInit }> = [];
 
 function installIO() {
   observers = [];
   class FakeIO {
-    private entry: { cb: IntersectionObserverCallback; el?: Element; disconnected: boolean };
-    constructor(cb: IntersectionObserverCallback) {
-      this.entry = { cb, disconnected: false };
+    private entry: { cb: IntersectionObserverCallback; el?: Element; disconnected: boolean; options?: IntersectionObserverInit };
+    constructor(cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+      this.entry = { cb, disconnected: false, options };
       observers.push(this.entry);
     }
     observe(el: Element) {
@@ -165,6 +165,98 @@ describe("Reveal", () => {
     const { host, unmount } = mount(<Reveal>content</Reveal>);
 
     expect(host.querySelector("[data-fancy-reveal]")?.getAttribute("data-in-view")).toBe("true");
+
+    unmount();
+  });
+});
+
+/**
+ * `root` + `onReveal`.
+ *
+ * Reveal only ever observed against the viewport. Inside a scroll box that
+ * still fires (an observer's intersection is clipped by scrolling ancestors),
+ * but `rootMargin` then measures from the window's edge rather than the box's,
+ * so "reveal 10% before the bottom" could not be said about a box. And a host
+ * had no way to learn that a block revealed short of watching the DOM.
+ */
+describe("Reveal — root and onReveal", () => {
+  it("observes against the given root element", () => {
+    const box = document.createElement("div");
+    const { unmount } = mount(<Reveal root={box} rootMargin="0px 0px -10%">content</Reveal>);
+
+    expect(observers[0].options?.root).toBe(box);
+    expect(observers[0].options?.rootMargin).toBe("0px 0px -10%");
+
+    unmount();
+  });
+
+  it("accepts a ref to the root", () => {
+    const box = document.createElement("div");
+    const ref = createRef<HTMLDivElement>();
+    (ref as { current: HTMLDivElement | null }).current = box;
+    const { unmount } = mount(<Reveal root={ref}>content</Reveal>);
+
+    expect(observers[0].options?.root).toBe(box);
+
+    unmount();
+  });
+
+  it("resolves a ref attached in the same render, by its parent", () => {
+    // The common shape: the scroll box and its Reveals render together, so the
+    // ref is still empty while Reveal renders and only filled at commit.
+    function Box() {
+      const ref = useRef<HTMLDivElement>(null);
+      return (
+        <div ref={ref} data-box="">
+          <Reveal root={ref}>content</Reveal>
+        </div>
+      );
+    }
+    const { host, unmount } = mount(<Box />);
+
+    expect(observers[0].options?.root).toBe(host.querySelector("[data-box]"));
+
+    unmount();
+  });
+
+  it("observes the viewport when no root is given", () => {
+    const { unmount } = mount(<Reveal>content</Reveal>);
+
+    expect(observers[0].options?.root ?? null).toBeNull();
+
+    unmount();
+  });
+
+  it("calls onReveal once, when it reveals", () => {
+    const onReveal = vi.fn();
+    const { unmount } = mount(<Reveal onReveal={onReveal}>content</Reveal>);
+    expect(onReveal).not.toHaveBeenCalled();
+
+    enterView();
+    enterView();
+
+    expect(onReveal).toHaveBeenCalledTimes(1);
+
+    unmount();
+  });
+
+  it("calls onReveal under reduced motion too, because the content IS revealed", () => {
+    setReducedMotion(true);
+    const onReveal = vi.fn();
+    const { unmount } = mount(<Reveal onReveal={onReveal}>content</Reveal>);
+
+    expect(onReveal).toHaveBeenCalledTimes(1);
+
+    unmount();
+  });
+
+  it("does not leak root or onReveal onto the DOM element", () => {
+    const box = document.createElement("div");
+    const { host, unmount } = mount(<Reveal root={box} onReveal={() => {}}>content</Reveal>);
+    const el = host.querySelector("[data-fancy-reveal]") as HTMLElement;
+
+    expect(el.hasAttribute("root")).toBe(false);
+    expect(el.hasAttribute("onreveal")).toBe(false);
 
     unmount();
   });

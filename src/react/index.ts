@@ -4,7 +4,7 @@
  * `MotionStage` drives a page from scroll using the pure engine in the root
  * entry. The EditMode timeline dock (authoring) is a later slice.
  */
-export { MotionStage, type MotionStageProps } from "./MotionStage";
+export { MotionStage, type MotionStageProps, type ElementTarget } from "./MotionStage";
 export { TimelineDock, type TimelineDockProps } from "./TimelineDock";
 export { Reveal } from "./Reveal";
 export type { RevealProps } from "./Reveal";
