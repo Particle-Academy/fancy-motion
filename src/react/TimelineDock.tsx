@@ -155,24 +155,11 @@ export function TimelineDock({
 
       <div
         ref={trackRef}
-        // A scrubbable track is a slider, and this one was a bare div: no role,
-        // no value, and nothing a keyboard could reach.
-        role="slider"
-        aria-label="Timeline playhead"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(clamp01(progress) * 100)}
-        aria-valuetext={`${Math.round(clamp01(progress) * 100)}% through the timeline`}
-        tabIndex={onScrub ? 0 : -1}
-        data-fmo-track=""
-        onKeyDown={(e) => {
-          if (!onScrub) return;
-          const step = e.shiftKey ? 0.1 : 0.02;
-          if (e.key === "ArrowRight") { e.preventDefault(); onScrub(clamp01(progress + step)); }
-          if (e.key === "ArrowLeft") { e.preventDefault(); onScrub(clamp01(progress - step)); }
-          if (e.key === "Home") { e.preventDefault(); onScrub(0); }
-          if (e.key === "End") { e.preventDefault(); onScrub(1); }
-        }}
+        // The area takes the pointer; the slider below takes the keyboard and
+        // the semantics. They are split because the keyframe and scene buttons
+        // live on this track, and a control inside role="slider" is flattened
+        // into it by assistive tech (axe nested-interactive).
+        data-fmo-track-area=""
         style={track}
         onPointerDown={onTrackPointer}
         onPointerMove={onTrackMove}
@@ -180,9 +167,32 @@ export function TimelineDock({
         {/* frame dividers */}
         {Array.from({ length: frames }, (_, i) => (
           <div key={`f${i}`} style={{ ...frameCell, left: `${(i / frames) * 100}%`, width: `${(1 / frames) * 100}%` }}>
-            <span style={frameLabel}>{i + 1}</span>
+            <span data-fmo-frame-label="" style={frameLabel}>{i + 1}</span>
           </div>
         ))}
+
+        <div
+          // A scrubbable track is a slider. It has no children, so nothing
+          // interactive is nested in it; the controls are its siblings and
+          // paint above it because they come later in the DOM.
+          role="slider"
+          aria-label="Timeline playhead"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(clamp01(progress) * 100)}
+          aria-valuetext={`${Math.round(clamp01(progress) * 100)}% through the timeline`}
+          tabIndex={onScrub ? 0 : -1}
+          data-fmo-track=""
+          onKeyDown={(e) => {
+            if (!onScrub) return;
+            const step = e.shiftKey ? 0.1 : 0.02;
+            if (e.key === "ArrowRight") { e.preventDefault(); onScrub(clamp01(progress + step)); }
+            if (e.key === "ArrowLeft") { e.preventDefault(); onScrub(clamp01(progress - step)); }
+            if (e.key === "Home") { e.preventDefault(); onScrub(0); }
+            if (e.key === "End") { e.preventDefault(); onScrub(1); }
+          }}
+          style={sliderLayer}
+        />
 
         {/* scenes (pinned ranges) — drag the edges to resize, ✕ to remove */}
         {(value.scenes ?? []).map((s) => (
@@ -316,7 +326,11 @@ const frameCell: CSSProperties = {
   borderRight: "1px solid var(--fmo-border, #1e293b)",
   boxSizing: "border-box",
 };
-const frameLabel: CSSProperties = { position: "absolute", top: 4, left: 6, fontSize: 10, opacity: 0.4 };
+// A muted TOKEN rather than the foreground at opacity 0.4, which measured
+// 3.32:1 on the track at 10px. slate-400 on the default track is 6.9:1.
+const frameLabel: CSSProperties = { position: "absolute", top: 4, left: 6, fontSize: 10, color: "var(--fmo-muted, #94a3b8)" };
+// Fills the track under the controls; it holds focus and the slider semantics.
+const sliderLayer: CSSProperties = { position: "absolute", inset: 0, borderRadius: 8 };
 const sceneBand: CSSProperties = {
   position: "absolute",
   top: 0,

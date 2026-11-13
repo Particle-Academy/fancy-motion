@@ -22,6 +22,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`TimelineDock` no longer nests its controls inside the slider** (axe
+  `nested-interactive`, lab run 601, K33). The keyframe markers and scene remove
+  buttons sat inside `role="slider"`, where assistive tech flattens them into
+  the slider. The track is now an area holding a childless slider layer plus
+  the controls as its siblings. `[data-fmo-track]` still names the slider (same
+  role, value and keys); the pointer area is the new `[data-fmo-track-area]`.
+  Nothing to do unless your own CSS styled `[data-fmo-track]` as the visible
+  track; move that to `[data-fmo-track-area]`.
+- **`TimelineDock` frame numbers are readable** (axe `color-contrast`, 3.32:1).
+  They drew the foreground at opacity 0.4; they now use a new
+  `--fmo-muted` token (default `#94a3b8`, 6.9:1 on the default track).
 - **`CHANGELOG.md` is now in the published tarball.** `files` did not whitelist it, so npm never shipped it — and this package puts breaking changes in MINOR releases and tells you in the README to read the entry before taking one. The instruction existed for the author, who has the file, and not for the consumer, who is the only one being instructed. Nothing for you to do; the file simply arrives from this release on.
 - Dropped `docs` from `files`: it was declared and never existed, so the package claimed to ship it and did not.
 

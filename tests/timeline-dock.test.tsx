@@ -99,7 +99,49 @@ describe("TimelineDock accessibility", () => {
 
     expect(host.querySelector("[data-fmo-track]")!.getAttribute("tabindex")).toBe("-1");
   });
+
+  it("nests no control inside the slider", () => {
+    // axe nested-interactive (lab run 601, K33): the keyframe markers and the
+    // scene remove buttons sat INSIDE role="slider", so a screen reader
+    // flattened them into the slider and could not reach them as buttons.
+    const withScene = { ...doc, scenes: [{ id: "s1", at: 0.2, length: 0.2, keyframes: [] }] } as TimelineDoc;
+    const host = mount(<TimelineDock value={withScene} onChange={vi.fn()} onScrub={vi.fn()} />);
+
+    const slider = host.querySelector('[role="slider"]')!;
+    expect(slider.querySelectorAll("button, [tabindex], input, a[href]")).toHaveLength(0);
+    // ...and the controls still exist, beside it.
+    expect(host.querySelectorAll("[data-fmo-keyframe]")).toHaveLength(2);
+    expect(host.querySelectorAll("[data-fmo-scene-remove]")).toHaveLength(1);
+  });
+
+  it("draws frame numbers at a readable contrast by default", () => {
+    // The labels were the dock foreground at opacity 0.4 on the track:
+    // 3.32:1 at 10px (axe color-contrast, lab run 601, K33).
+    const host = mount(<TimelineDock value={doc} onChange={vi.fn()} />);
+    const label = host.querySelector<HTMLElement>("[data-fmo-frame-label]")!;
+    expect(label).not.toBeNull();
+    expect(label.style.opacity === "" || Number(label.style.opacity) === 1).toBe(true);
+
+    const fallback = (css: string) => /var\(--[\w-]+, (#[0-9a-f]{6})\)/i.exec(css)?.[1];
+    const fg = fallback(label.style.color);
+    const bg = fallback(host.querySelector<HTMLElement>("[data-fmo-track-area]")!.style.background);
+    expect(fg).toBeDefined();
+    expect(bg).toBeDefined();
+    expect(contrast(fg!, bg!)).toBeGreaterThanOrEqual(4.5);
+  });
 });
+
+function contrast(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+}
 
 /**
  * The dock themes through `--fmo-*`.
