@@ -132,6 +132,7 @@ export function TimelineDock({
 
   return (
     <div style={dock} data-fancy-motion-dock="">
+      <style>{DOCK_FOCUS_CSS}</style>
       <div style={header}>
         <button
           type="button"
@@ -231,7 +232,7 @@ export function TimelineDock({
             type="button"
             // The marker renders as a bare diamond with no text at all, so the
             // name has to be explicit. `aria-pressed` is what tells a screen
-            // reader which keyframe is selected — the white outline below says
+            // reader which keyframe is selected — the white ring below says
             // it only to people who can see it.
             aria-label={`${k.mode} keyframe at ${Math.round(k.at * 100)}%`}
             aria-pressed={k.id === selectedKeyframe}
@@ -243,7 +244,10 @@ export function TimelineDock({
               ...diamond,
               left: `${k.at * 100}%`,
               background: k.mode === "snap" ? "var(--fmo-scene, #f59e0b)" : "var(--fmo-accent, #8b5cf6)",
-              outline: k.id === selectedKeyframe ? "2px solid #fff" : "none",
+              // Selection is a white ring drawn with box-shadow, NOT outline: an
+              // inline outline (it used to be `none` when unselected) beats any
+              // stylesheet rule, so keyboard focus could never be shown.
+              boxShadow: k.id === selectedKeyframe ? "0 0 0 2px #fff" : undefined,
             }}
           />
         ))}
@@ -269,6 +273,27 @@ export function TimelineDock({
     </div>
   );
 }
+
+/**
+ * Keyboard focus for the keyframe markers. Everything else in the dock is
+ * inline, but `:focus-visible` cannot be expressed inline, so this one rule is
+ * injected with the dock. The colour is the kit focus token (`--fancy-focus`,
+ * `--fancy-focus-dark` in a dark host), the same ring the rest of the suite
+ * draws. The offset clears the white selection ring, so a focused AND selected
+ * marker shows both.
+ */
+const DOCK_FOCUS_CSS = `
+[data-fmo-keyframe]:focus-visible {
+  outline-style: solid;
+  outline-width: 2px;
+  outline-color: var(--fancy-focus, var(--color-blue-500, #3b82f6));
+  outline-offset: 3px;
+}
+.dark [data-fmo-keyframe]:focus-visible,
+[data-theme="dark"] [data-fmo-keyframe]:focus-visible {
+  outline-color: var(--fancy-focus-dark, var(--color-blue-400, #60a5fa));
+}
+`;
 
 function clamp01(n: number): number {
   return Math.min(1, Math.max(0, n));

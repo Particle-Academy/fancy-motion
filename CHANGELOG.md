@@ -22,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`TimelineDock`'s keyframe markers show keyboard focus.** A focused marker
+  drew nothing (measured in Chromium with real Tab presses at 375, 768 and
+  1280 px): its inline style set `outline: "none"` whenever it was not the
+  selected keyframe, and an inline declaration beats any stylesheet rule. The
+  selected marker's white ring is now a `box-shadow`, the inline outline is
+  gone, and the dock injects one `[data-fmo-keyframe]:focus-visible` rule that
+  draws the kit focus ring: a 2px outline in `var(--fancy-focus)`
+  (`var(--fancy-focus-dark)` under `.dark` / `[data-theme="dark"]`), offset to
+  clear the selection ring. Nothing to do on upgrade, unless you styled the
+  selected marker by its inline `outline`, which is now a `box-shadow`.
 - **`TimelineDock` no longer nests its controls inside the slider** (axe
   `nested-interactive`, lab run 601, K33). The keyframe markers and scene remove
   buttons sat inside `role="slider"`, where assistive tech flattens them into

@@ -166,3 +166,77 @@ describe("theming", () => {
     expect(source).not.toMatch(/background: "#0f172a"/);
   });
 });
+
+/**
+ * A keyframe marker shows keyboard focus.
+ *
+ * Measured in Chromium with real Tab presses (375 / 768 / 1280 px): a focused
+ * marker had computed outline-style `none` and no box-shadow, because its INLINE
+ * style set `outline: "none"` whenever it was not the selected keyframe. An
+ * inline declaration beats any stylesheet `:focus-visible` rule, so nothing a
+ * host or the kit shipped could put a ring back.
+ *
+ * jsdom does not evaluate `:focus-visible`, so this checks the two halves a
+ * browser combines: the inline style no longer pins the outline, and a rule in
+ * the document matches the rendered marker on `:focus-visible` with the kit
+ * focus token.
+ */
+describe("keyframe marker focus", () => {
+  function focusVisibleRules(el: Element): CSSStyleRule[] {
+    const out: CSSStyleRule[] = [];
+    const walk = (rules: CSSRuleList) => {
+      for (const r of Array.from(rules)) {
+        if ("selectorText" in r) {
+          const rule = r as CSSStyleRule;
+          const hit = rule.selectorText
+            .split(",")
+            .map((s) => s.trim())
+            .some((s) => s.includes(":focus-visible") && el.matches(s.replace(/:focus-visible/g, "")));
+          if (hit) out.push(rule);
+        } else if ("cssRules" in r) walk((r as CSSGroupingRule).cssRules);
+      }
+    };
+    for (const sheet of Array.from(document.styleSheets)) walk(sheet.cssRules);
+    return out;
+  }
+
+  it("does not pin the outline inline, selected or not", () => {
+    const host = mount(<TimelineDock value={doc} onChange={vi.fn()} selectedKeyframe="k2" onSelectKeyframe={vi.fn()} />);
+    for (const m of host.querySelectorAll<HTMLElement>("[data-fmo-keyframe]")) {
+      expect(m.style.outline, m.dataset.fmoKeyframe).toBe("");
+      expect(m.style.outlineStyle, m.dataset.fmoKeyframe).toBe("");
+    }
+  });
+
+  it("draws the kit focus ring on :focus-visible", () => {
+    const host = mount(<TimelineDock value={doc} onChange={vi.fn()} />);
+    for (const m of host.querySelectorAll<HTMLElement>("[data-fmo-keyframe]")) {
+      const ring = focusVisibleRules(m).find(
+        (r) =>
+          r.style.getPropertyValue("outline-style") === "solid" &&
+          parseFloat(r.style.getPropertyValue("outline-width")) > 0 &&
+          r.style.getPropertyValue("outline-color").includes("--fancy-focus"),
+      );
+      expect(ring, `no :focus-visible ring for ${m.dataset.fmoKeyframe}`).toBeDefined();
+    }
+  });
+
+  it("uses the dark focus token in a dark host", () => {
+    const wrap = document.createElement("div");
+    wrap.className = "dark";
+    document.body.append(wrap);
+    const root = createRoot(wrap);
+    act(() => root.render(<TimelineDock value={doc} onChange={vi.fn()} />));
+    const m = wrap.querySelector("[data-fmo-keyframe]")!;
+    const dark = focusVisibleRules(m).find((r) => r.style.getPropertyValue("outline-color").includes("--fancy-focus-dark"));
+    expect(dark).toBeDefined();
+  });
+
+  it("still marks the selected keyframe, and only that one", () => {
+    const host = mount(<TimelineDock value={doc} onChange={vi.fn()} selectedKeyframe="k2" onSelectKeyframe={vi.fn()} />);
+    const k1 = host.querySelector<HTMLElement>('[data-fmo-keyframe="k1"]')!;
+    const k2 = host.querySelector<HTMLElement>('[data-fmo-keyframe="k2"]')!;
+    expect(k2.style.boxShadow).not.toBe("");
+    expect(k1.style.boxShadow).toBe("");
+  });
+});
