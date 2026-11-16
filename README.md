@@ -2,7 +2,7 @@
 
 [![Fancified](art/fancified.svg)](https://particle.academy)
 
-The scroll-driven **timeline** motion engine for the Fancy UI suite. **The page
+The scroll-driven **timeline** motion engine for the Fancy Dev Kit. **The page
 is a video; scroll is the playhead.**
 
 > **Status: spine.** Ships the `TimelineDoc` model + the pure scroll→snapshot
@@ -73,7 +73,7 @@ MIT © Particle Academy
 
 ---
 
-## ⭐ Star Fancy UI
+## ⭐ Star Fancy Dev Kit
 
 If this package is useful to you, a quick ⭐ on the repo really helps us build a better kit. Thank you!
 
